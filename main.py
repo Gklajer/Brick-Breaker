@@ -1,7 +1,6 @@
 import pygame
 
 
-
 FPS = 60
 GAME_TITLE = "Brick Breaker"
 
@@ -20,6 +19,7 @@ BALL_COLOR = "black"
 BALL_RADIUS = 10
 BALL_INIT_X = WINDOW_WIDTH/2
 BALL_INIT_Y = PADDLE_INIT_Y - BALL_RADIUS
+
 
 class Paddle:
     VEL = 5
@@ -44,14 +44,39 @@ class Ball:
     VEL = 5
 
     def __init__(self, x, y, radius, color):
-        self.center = x, y
         self.radius = radius
         self.color = color
+        self.x_vel, self.y_vel = 0, -self.VEL
+        self.rect = pygame.draw.circle(WINDOW, self.color, (x, y), self.radius)
 
     def draw(self):
-        pygame.draw.circle(WINDOW, self.color, self.center, self.radius)
+        pygame.draw.circle(WINDOW, self.color, self.rect.center, self.radius)
 
-def draw(paddle: Paddle, ball : Ball):
+    def _collide_boundaries(self):
+        # Check boundaries collisions
+
+        # Left and right walls
+        if not (0 < self.rect.left + self.x_vel
+                and self.rect.right + self.x_vel < WINDOW_WIDTH):
+            # Reverse x velocity
+            self.x_vel *= -1
+
+        # Ceilling
+        if not (0 < self.rect.top + self.y_vel):
+            # Reverse y velocity
+            self.y_vel *= -1
+
+        # Floor TODO
+        if not (self.rect.bottom > WINDOW_HEIGHT):
+            pass
+
+    def move(self):
+        self._collide_boundaries()
+        self.rect.left += self.x_vel
+        self.rect.bottom += self.y_vel
+
+
+def draw(paddle: Paddle, ball: Ball):
     WINDOW.fill(WINDOW_COLOR)
     paddle.draw()
     ball.draw()
@@ -67,7 +92,7 @@ def main():
                     PADDLE_WIDTH,
                     PADDLE_HEIGHT,
                     PADDLE_COLOR)
-                    
+
     ball = Ball(BALL_INIT_X,
                 BALL_INIT_Y,
                 BALL_RADIUS,
@@ -88,6 +113,7 @@ def main():
         if keys[pygame.K_RIGHT]:
             paddle.move(RIGHT_DIR)
 
+        ball.move()
         draw(paddle, ball)
         pygame.display.update()
 
