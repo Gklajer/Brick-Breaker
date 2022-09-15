@@ -22,6 +22,16 @@ BALL_RADIUS = 10
 BALL_INIT_X = WINDOW_WIDTH/2
 BALL_INIT_Y = PADDLE_INIT_Y - BALL_RADIUS
 
+BRICKS_COLS_NUMBER, BRICKS_ROWS_NUMBER = 10, 2
+BRICKS_COLOR = "green"
+BRICKS_GAP = 1
+BRICKS_HEALTH = 3
+BRICKS_TOTAL_HEIGHT = WINDOW_HEIGHT/4
+BRICKS_WIDTH = (WINDOW_WIDTH - (BRICKS_GAP *
+                (BRICKS_COLS_NUMBER-1))) / BRICKS_COLS_NUMBER
+BRICKS_HEIGHT = (BRICKS_TOTAL_HEIGHT - (BRICKS_GAP *
+                 (BRICKS_ROWS_NUMBER-1))) / BRICKS_ROWS_NUMBER
+
 
 class Paddle:
     VEL = 5
@@ -78,10 +88,35 @@ class Ball:
         self.rect.bottom += self.y_vel
 
 
-def draw(paddle: Paddle, ball: Ball):
+class Brick:
+
+    def __init__(self, x, y, width, height, health, color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.health = health
+        self.color = color
+
+    def draw(self):
+        pygame.draw.rect(WINDOW, self.color, self.rect)
+
+
+def generate_bricks():
+    return [Brick((BRICKS_WIDTH+BRICKS_GAP) * col,
+                  (BRICKS_HEIGHT+BRICKS_GAP) * row,
+                  BRICKS_WIDTH,
+                  BRICKS_HEIGHT,
+                  BRICKS_HEALTH,
+                  BRICKS_COLOR
+                  )
+            for col in range(BRICKS_COLS_NUMBER) for row in range(BRICKS_ROWS_NUMBER)]
+
+
+def draw(paddle: Paddle, ball: Ball, bricks: list[Brick]):
     WINDOW.fill(WINDOW_COLOR)
     paddle.draw()
     ball.draw()
+
+    for brick in bricks:
+        brick.draw()
 
 
 def check_ball_paddle_collision(ball: Ball, paddle: Paddle):
@@ -115,6 +150,8 @@ def main():
                 BALL_RADIUS,
                 BALL_COLOR)
 
+    bricks = generate_bricks()
+
     running = True
     while running:
         clock.tick(FPS)
@@ -132,7 +169,7 @@ def main():
 
         ball_paddle_collision(ball, paddle)
         ball.move()
-        draw(paddle, ball)
+        draw(paddle, ball, bricks)
         pygame.display.update()
 
     pygame.quit()
