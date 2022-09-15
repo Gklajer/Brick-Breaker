@@ -1,21 +1,45 @@
 import pygame
 
+
+FPS = 60
+GAME_TITLE = "Brick Breaker"
+
+WINDOW_COLOR = "white"
 WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
 WINDOW = pygame.display.set_mode(WINDOW_SIZE)
 
-GAME_TITLE = "Brick Breaker"
-pygame.display.set_caption(GAME_TITLE)
+PADDLE_COLOR = "black"
+PADDLE_WIDTH, PADDLE_HEIGHT = 100, 15
+PADDLE_INIT_X = WINDOW_WIDTH/2 - PADDLE_WIDTH/2
+PADDLE_INIT_Y = WINDOW_HEIGHT - PADDLE_HEIGHT - (PADDLE__INIT_Y_MARGIN := 5)
 
-FPS = 60
+
+class Paddle:
+    VEL = 5
+
+    def __init__(self, x, y, width, height, color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = color
+
+    def draw(self):
+        pygame.draw.rect(WINDOW, self.color, self.rect)
 
 
-def draw():
-    WINDOW.fill("white")
-    pygame.display.update()
+def draw(paddle: Paddle):
+    WINDOW.fill(WINDOW_COLOR)
+    paddle.draw()
 
 
 def main():
+    pygame.display.set_caption(GAME_TITLE)
+
     clock = pygame.time.Clock()
+
+    paddle = Paddle(PADDLE_INIT_X,
+                    PADDLE_INIT_Y,
+                    PADDLE_WIDTH,
+                    PADDLE_HEIGHT,
+                    PADDLE_COLOR)
 
     running = True
     while running:
@@ -26,7 +50,8 @@ def main():
                     running = False
                     break
 
-        draw()
+        draw(paddle)
+        pygame.display.update()
 
     pygame.quit()
     quit()
