@@ -1,3 +1,5 @@
+import math
+from subprocess import check_call
 import pygame
 
 
@@ -46,7 +48,7 @@ class Ball:
     def __init__(self, x, y, radius, color):
         self.radius = radius
         self.color = color
-        self.x_vel, self.y_vel = 0, -self.VEL
+        self.x_vel, self.y_vel = 1, -self.VEL
         self.rect = pygame.draw.circle(WINDOW, self.color, (x, y), self.radius)
 
     def draw(self):
@@ -82,6 +84,21 @@ def draw(paddle: Paddle, ball: Ball):
     ball.draw()
 
 
+def check_ball_paddle_collision(ball: Ball, paddle: Paddle):
+    return (paddle.rect.left <= ball.rect.centerx <= paddle.rect.right) and (ball.rect.bottom >= paddle.rect.top)
+
+
+def ball_paddle_collision(ball: Ball, paddle: Paddle):
+    if not check_ball_paddle_collision(ball, paddle):
+        return None
+
+    percent_width = (distance_center := ball.rect.centerx -
+                     paddle.rect.centerx) / (paddle.rect.width/2)
+    angle_rad = math.radians(angle_deg := percent_width * 90)
+    ball.x_vel = math.sin(angle_rad) * ball.VEL
+    ball.y_vel = -math.cos(angle_rad) * ball.VEL
+
+
 def main():
     pygame.display.set_caption(GAME_TITLE)
 
@@ -113,6 +130,7 @@ def main():
         if keys[pygame.K_RIGHT]:
             paddle.move(RIGHT_DIR)
 
+        ball_paddle_collision(ball, paddle)
         ball.move()
         draw(paddle, ball)
         pygame.display.update()
