@@ -27,7 +27,12 @@ class Paddle:
         pygame.draw.rect(WINDOW, self.color, self.rect)
 
     def move(self, direction=RIGHT_DIR):
-        self.rect.left += (delta_x := self.VEL * direction)
+        # Check boundaries
+        if not (0 < self.rect.left + (delta_x := self.VEL * direction)
+                and self.rect.right + delta_x < WINDOW_WIDTH):
+            return None
+
+        self.rect.left += delta_x
 
 
 def draw(paddle: Paddle):
