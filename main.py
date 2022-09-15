@@ -4,6 +4,8 @@ import pygame
 FPS = 60
 GAME_TITLE = "Brick Breaker"
 
+LEFT_DIR, RIGHT_DIR = -1, +1
+
 WINDOW_COLOR = "white"
 WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
 WINDOW = pygame.display.set_mode(WINDOW_SIZE)
@@ -23,6 +25,9 @@ class Paddle:
 
     def draw(self):
         pygame.draw.rect(WINDOW, self.color, self.rect)
+
+    def move(self, direction=RIGHT_DIR):
+        self.rect.left += (delta_x := self.VEL * direction)
 
 
 def draw(paddle: Paddle):
@@ -45,10 +50,16 @@ def main():
     while running:
         clock.tick(FPS)
         for event in pygame.event.get():
-            match event.type:
-                case pygame.QUIT:
-                    running = False
-                    break
+            if event.type == pygame.QUIT:
+                running = False
+                break
+
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_LEFT]:
+            paddle.move(LEFT_DIR)
+        if keys[pygame.K_RIGHT]:
+            paddle.move(RIGHT_DIR)
 
         draw(paddle)
         pygame.display.update()
