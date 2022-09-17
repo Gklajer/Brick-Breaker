@@ -1,5 +1,5 @@
 import math
-from random import random, randrange
+from random import randrange
 
 import pygame
 
@@ -9,8 +9,6 @@ FPS = 60
 GAME_TITLE = "Brick Breaker"
 
 LEFT_DIR, RIGHT_DIR = -1, +1
-
-EPS = 1
 
 WINDOW_COLOR = "white"
 WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
@@ -28,6 +26,7 @@ BALL_COLOR = "black"
 BALL_RADIUS = 10
 BALL_INIT_X = WINDOW_WIDTH / 2
 BALL_INIT_Y = PADDLE_INIT_Y - BALL_RADIUS
+BALL_UNSTUCK_EPS = 1
 
 GREEN = (0, 255, 0)
 BRICKS_COLS_NUMBER, BRICKS_ROWS_NUMBER = 10, 3
@@ -90,7 +89,7 @@ class Ball:
     def draw(self):
         pygame.draw.circle(WINDOW, self.color, self.rect.center, self.radius)
 
-    def _bounce_rand(self, vel : float):
+    def _bounce_rand(self, vel: float):
         return vel*(1-randrange(-20, 21)/100)
 
     def bounce_x(self, old_vel: float = None):
@@ -99,8 +98,8 @@ class Ball:
 
         self.x_vel = (rand_bounce := self._bounce_rand(-old_vel))
 
-        if abs(self.y_vel) <= EPS:
-            self.y_vel = abs(rand_bounce)
+        if abs(self.y_vel) <= BALL_UNSTUCK_EPS:
+            self.y_vel = -abs(rand_bounce)
 
     def bounce_y(self, old_vel: float = None):
         if old_vel is None:
@@ -108,9 +107,8 @@ class Ball:
 
         self.y_vel = (rand_bounce := self._bounce_rand(-old_vel))
 
-        if abs(self.x_vel) <= EPS:
+        if abs(self.x_vel) <= BALL_UNSTUCK_EPS:
             self.x_vel = -rand_bounce
-
 
     def _collide_boundaries(self):
         # Check boundaries collisions
