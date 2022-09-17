@@ -306,7 +306,6 @@ def main():
             return True
         else:
             lives_number = result
-            print(lives_number)
             reset_pos(ball, paddle)
 
         draw(paddle, ball, bricks, lives_number)
