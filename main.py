@@ -1,12 +1,16 @@
 import math
+from random import random, randrange
 
 import pygame
 
+pygame.init()
 
 FPS = 60
 GAME_TITLE = "Brick Breaker"
 
 LEFT_DIR, RIGHT_DIR = -1, +1
+
+EPS = 1
 
 WINDOW_COLOR = "white"
 WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
@@ -41,11 +45,18 @@ BRICKS_HEIGHT = (
     BRICKS_TOTAL_HEIGHT - (BRICKS_GAP * (BRICKS_ROWS_NUMBER - 1))
 ) / BRICKS_ROWS_NUMBER
 
+LIVES_FONT_SIZE = 40
+LIVES_FONT_COLOR = "black"
+LIVES_FONT = pygame.font.SysFont("comics", LIVES_FONT_SIZE)
+LIVES_INIT_NUMBER = 3
+LIVES_TEXT_POS_MARGIN = WINDOW_WIDTH/80
+
 
 class Paddle:
     VEL = PADDLE_VEL
 
     def __init__(self, x, y, width, height, color):
+        self.init_pos = x, y
         self.rect = pygame.Rect(x, y, width, height)
         self.color = color
 
@@ -62,11 +73,15 @@ class Paddle:
 
         self.rect.left += delta_x
 
+    def reset_pos(self):
+        self.rect.topleft = self.init_pos
+
 
 class Ball:
     VEL = BALL_VEL
 
     def __init__(self, x, y, radius, color):
+        self.init_pos = x, y
         self.radius = radius
         self.color = color
         self.x_vel, self.y_vel = 2, -self.VEL
@@ -74,6 +89,28 @@ class Ball:
 
     def draw(self):
         pygame.draw.circle(WINDOW, self.color, self.rect.center, self.radius)
+
+    def _bounce_rand(self, vel : float):
+        return vel*(1-randrange(-20, 21)/100)
+
+    def bounce_x(self, old_vel: float = None):
+        if old_vel is None:
+            old_vel = self.x_vel
+
+        self.x_vel = (rand_bounce := self._bounce_rand(-old_vel))
+
+        if abs(self.y_vel) <= EPS:
+            self.y_vel = abs(rand_bounce)
+
+    def bounce_y(self, old_vel: float = None):
+        if old_vel is None:
+            old_vel = self.y_vel
+
+        self.y_vel = (rand_bounce := self._bounce_rand(-old_vel))
+
+        if abs(self.x_vel) <= EPS:
+            self.x_vel = -rand_bounce
+
 
     def _collide_boundaries(self):
         # Check boundaries collisions
@@ -84,21 +121,20 @@ class Ball:
             and self.rect.right + self.x_vel < WINDOW_WIDTH
         ):
             # Reverse x velocity
-            self.x_vel *= -1
+            self.bounce_x()
 
         # Ceilling
         if not (0 < self.rect.top + self.y_vel):
             # Reverse y velocity
-            self.y_vel *= -1
-
-        # Floor TODO
-        if not (self.rect.bottom > WINDOW_HEIGHT):
-            pass
+            self.bounce_y()
 
     def move(self):
         self._collide_boundaries()
         self.rect.left += self.x_vel
         self.rect.bottom += self.y_vel
+
+    def reset_pos(self):
+        self.rect.topleft = self.init_pos
 
 
 class Brick:
@@ -131,7 +167,7 @@ class Brick:
                      (self.rect.left <=
                       ball.rect.left
                       <= self.rect.right + BRICKS_COLLIDER_EPS))):
-            ball.x_vel *= -1
+            ball.bounce_x()
             return True
         else:
             return False
@@ -148,7 +184,7 @@ class Brick:
                  (self.rect.top - BRICKS_COLLIDER_EPS <=
                  ball.rect.bottom
                  <= self.rect.bottom))):
-            ball.y_vel *= -1
+            ball.bounce_y()
             return True
 
         return False
@@ -176,13 +212,21 @@ def generate_bricks():
     ]
 
 
-def draw(paddle: Paddle, ball: Ball, bricks: list[Brick]):
+def draw(paddle: Paddle, ball: Ball, bricks: list[Brick], lives_number: int):
     WINDOW.fill(WINDOW_COLOR)
     paddle.draw()
     ball.draw()
 
     for brick in bricks:
         brick.draw()
+
+    lives_text = LIVES_FONT.render(f"Lives : {lives_number}",
+                                   True,
+                                   LIVES_FONT_COLOR)
+    WINDOW.blit(lives_text, (LIVES_TEXT_POS_MARGIN,
+                             WINDOW_HEIGHT -
+                             LIVES_TEXT_POS_MARGIN -
+                             lives_text.get_height()))
 
 
 def check_ball_paddle_collision(ball: Ball, paddle: Paddle):
@@ -200,8 +244,8 @@ def ball_paddle_collision(ball: Ball, paddle: Paddle):
     )
     angle_deg = percent_width * 90
     angle_rad = math.radians(angle_deg)
-    ball.x_vel = math.sin(angle_rad) * ball.VEL
-    ball.y_vel = -math.cos(angle_rad) * ball.VEL
+    ball.bounce_x(-math.sin(angle_rad) * ball.VEL)
+    ball.bounce_y(math.cos(angle_rad) * ball.VEL)
 
 
 def ball_bricks_collision(ball: Ball, bricks: list[Brick]):
@@ -210,6 +254,18 @@ def ball_bricks_collision(ball: Ball, bricks: list[Brick]):
 
         if brick.health <= 0:
             bricks.remove(brick)
+
+
+def ball_hits_ground(ball: Ball, lives_number: int):
+    if (ball.rect.top > WINDOW_HEIGHT):
+        return lives_number - 1
+
+    return None
+
+
+def reset_pos(ball: Ball, paddle: Paddle):
+    ball.reset_pos()
+    paddle.reset_pos()
 
 
 def main():
@@ -224,6 +280,8 @@ def main():
     ball = Ball(BALL_INIT_X, BALL_INIT_Y, BALL_RADIUS, BALL_COLOR)
 
     bricks = generate_bricks()
+
+    lives_number = LIVES_INIT_NUMBER
 
     running = True
     while running:
@@ -243,12 +301,25 @@ def main():
         ball_paddle_collision(ball, paddle)
         ball_bricks_collision(ball, bricks)
         ball.move()
-        draw(paddle, ball, bricks)
+
+        if (result := ball_hits_ground(ball, lives_number)) is None:
+            pass
+        elif result <= 0:
+            return True
+        else:
+            lives_number = result
+            print(lives_number)
+            reset_pos(ball, paddle)
+
+        draw(paddle, ball, bricks, lives_number)
         pygame.display.update()
 
     pygame.quit()
-    quit()
+    return False
 
 
 if __name__ == "__main__":
-    main()
+    while main():
+        continue
+
+    quit()
